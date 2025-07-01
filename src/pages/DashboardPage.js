@@ -8,12 +8,13 @@ export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const URL = process.env.REACT_APP_URL || "http://localhost:5000";
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     // Get user profile
     axios
-      .get("http://localhost:5000/api/users/profile", {
+      .get(`${URL}/api/users/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setUser(res.data))
@@ -21,14 +22,14 @@ export default function DashboardPage() {
 
     // Get public forms (for all users)
     axios
-      .get("http://localhost:5000/api/forms/public")
+      .get(`${URL}/api/forms/public`)
       .then((res) => setPublicForms(res.data))
       .catch(() => setPublicForms([]));
 
     // Get my forms (for creators)
     if (token) {
       axios
-        .get("http://localhost:5000/api/forms", {
+        .get(`${URL}/api/forms`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => setMyForms(res.data))
@@ -42,7 +43,7 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       await axios.put(
-        `http://localhost:5000/api/forms/${formId}`,
+        `${URL}/api/forms/${formId}`,
         { status: "published" },
         { headers: { Authorization: `Bearer ${token}` } }
       );
