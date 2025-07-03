@@ -7,18 +7,19 @@ export default function FormResponsesPage() {
   const [responses, setResponses] = useState([]);
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
+  const URL = process.env.REACT_APP_URL || "http://localhost:5000";
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     axios
-      .get(`http://localhost:5000/api/forms/${id}`, {
+      .get(`${URL}/api/forms/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setForm(res.data))
       .catch(() => setError("Form not found or not authorized"));
 
     axios
-      .get(`http://localhost:5000/api/responses/form/${id}`, {
+      .get(`${URL}/api/responses/form/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setResponses(res.data.responses))
