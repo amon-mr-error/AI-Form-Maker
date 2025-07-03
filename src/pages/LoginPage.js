@@ -7,12 +7,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const URL = process.env.REACT_APP_URL || "http://localhost:5000";
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     try {
-      const res = await axios.post("http://localhost:5000/api/users/login", {
+      const res = await axios.post(`${URL}/api/users/login`,, {
         email,
         password,
       });
