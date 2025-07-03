@@ -11,7 +11,7 @@ export default function FillFormPage() {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:5000/api/forms/${id}`)
+      .get(`${URL}/api/forms/${id}`)
       .then((res) => setForm(res.data))
       .catch(() => setError("Form not found or not accessible"));
   }, [id]);
@@ -29,7 +29,7 @@ export default function FillFormPage() {
         elementId: el.id,
         value: values[el.id] || "",
       }));
-      await axios.post("http://localhost:5000/api/responses", {
+      await axios.post(`${URL}/api/responses`, {
         formId: form._id,
         responses,
       });
