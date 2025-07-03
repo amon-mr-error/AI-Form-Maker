@@ -13,7 +13,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     try {
-      const res = await axios.post(`${URL}/api/users/login`,, {
+      const res = await axios.post(`${URL}/api/users/login`, {
         email,
         password,
       });
