@@ -16,7 +16,7 @@ export default function GenerateFormPage() {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.post(
-        "http://localhost:5000/api/forms/generate",
+        `${URL}/api/forms/generate`,
         { prompt },
         { headers: { Authorization: `Bearer ${token}` } }
       );
