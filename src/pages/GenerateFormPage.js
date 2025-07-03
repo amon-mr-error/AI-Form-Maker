@@ -7,6 +7,7 @@ export default function GenerateFormPage() {
   const [form, setForm] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const URL = process.env.REACT_APP_URL || "http://localhost:5000";
 
   const handleGenerate = async (e) => {
     e.preventDefault();
