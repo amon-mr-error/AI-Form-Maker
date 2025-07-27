@@ -8,7 +8,6 @@ export default function FillFormPage() {
   const [values, setValues] = useState({});
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const URL = process.env.REACT_APP_URL || "http://localhost:5000";
 
   useEffect(() => {
     axios
