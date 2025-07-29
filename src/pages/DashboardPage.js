@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { 
-  Plus, 
-  BarChart3, 
-  ExternalLink, 
-  Copy, 
-  Eye, 
-  LogOut, 
-  FileText, 
+import {
+  Trash,
+  Plus,
+  BarChart3,
+  ExternalLink,
+  Copy,
+  Eye,
+  LogOut,
+  FileText,
   Users,
   Clock,
   CheckCircle2,
@@ -17,6 +18,14 @@ import {
   X
 } from "lucide-react";
 
+// 🔁 Import shared utilities
+import {
+  handlePublish,
+  handleCopy,
+  getStatusIcon,
+  getStatusColor
+} from "../utils/formUtils"; // Adjust path as needed
+
 export default function DashboardPage() {
   const [publicForms, setPublicForms] = useState([]);
   const [myForms, setMyForms] = useState([]);
@@ -24,7 +33,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [publishingId, setPublishingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, formId: null, formTitle: '' });
   const navigate = useNavigate();
   const URL = process.env.REACT_APP_URL || "http://localhost:5000";
 
@@ -34,6 +45,34 @@ export default function DashboardPage() {
     setUser(null);
     navigate("/login");
     setMobileMenuOpen(false);
+  };
+
+  const openDeleteModal = (formId, formTitle) => {
+    setDeleteModal({ isOpen: true, formId, formTitle });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModal({ isOpen: false, formId: null, formTitle: '' });
+  };
+
+  const handleDelete = async () => {
+    const { formId } = deleteModal;
+    const token = localStorage.getItem("token");
+    setDeletingId(formId);
+    
+    try {
+      await axios.delete(`${URL}/api/forms/${formId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setLoading(!loading); // Re-fetch forms after deletion
+      closeDeleteModal();
+    } catch (err) {
+      window.alert(err.response?.data?.message || "Failed to delete the form");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   useEffect(() => {
@@ -59,55 +98,6 @@ export default function DashboardPage() {
         .catch(() => setMyForms([]));
     }
   }, [loading]);
-
-  const handlePublish = async (formId) => {
-    const token = localStorage.getItem("token");
-    try {
-      setPublishingId(formId);
-      await axios.put(
-        `${URL}/api/forms/${formId}`,
-        { status: "published" },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setLoading(!loading); // Trigger re-fetch
-    } catch (err) {
-      window.alert(
-        err.response?.data?.message ||
-          "Failed to publish the form. Try again."
-      );
-    } finally {
-      setPublishingId(null);
-    }
-  };
-
-  const handleCopy = (formId) => {
-    const publicUrl = `${window.location.origin}/form/${formId}`;
-    navigator.clipboard.writeText(publicUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'published':
-        return <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />;
-      case 'draft':
-        return <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-amber-500" />;
-      default:
-        return <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />;
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'published':
-        return 'bg-green-50 text-green-700 border-green-200';
-      case 'draft':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
-      default:
-        return 'bg-gray-50 text-gray-700 border-gray-200';
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -243,7 +233,6 @@ export default function DashboardPage() {
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-3 sm:pt-4 border-t border-gray-100 space-y-3 sm:space-y-0">
                       
-                      
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           onClick={() => navigate(`/form/${form._id}/responses`)}
@@ -263,7 +252,15 @@ export default function DashboardPage() {
 
                         {form.status === "draft" && (
                           <button
-                            onClick={() => handlePublish(form._id)}
+                            onClick={() =>
+                              handlePublish({
+                                formId: form._id,
+                                setPublishingId,
+                                setLoading,
+                                loading,
+                                URL
+                              })
+                            }
                             disabled={publishingId === form._id}
                             className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors duration-200 disabled:opacity-50"
                           >
@@ -283,11 +280,31 @@ export default function DashboardPage() {
                         )}
                         
                         <button
-                          onClick={() => handleCopy(form._id)}
+                          onClick={() => handleCopy(form._id, setCopied)}
                           className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors duration-200"
                         >
                           <Copy className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                           Share
+                        </button>
+
+                        <button
+                          onClick={() => openDeleteModal(form._id, form.title)}
+                          disabled={deletingId === form._id}
+                          className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors duration-200 disabled:opacity-50"
+                        >
+                          {deletingId === form._id ? (
+                            <>
+                              <div className="w-3 h-3 sm:w-4 sm:h-4 mr-1 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                              <span className="hidden sm:inline">Deleting...</span>
+                              <span className="sm:hidden">...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Trash className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              <span className="hidden sm:inline">Delete</span>
+                              <span className="sm:hidden">Del</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -349,6 +366,52 @@ export default function DashboardPage() {
         </section>
       </main>
 
+      {/* Delete Confirmation Modal */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 transform transition-all duration-200 scale-100">
+            <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 bg-red-100 rounded-full">
+              <Trash className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
+            </div>
+            
+            <div className="text-center mb-6 sm:mb-8">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">
+                Delete Form
+              </h3>
+              <p className="text-gray-600 text-sm sm:text-base mb-3">
+                Are you sure you want to delete <span className="font-medium text-gray-900">"{deleteModal.formTitle}"</span>?
+              </p>
+              <p className="text-red-600 text-sm font-medium">
+                This action cannot be undone and all form responses will be permanently lost.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <button
+                onClick={closeDeleteModal}
+                className="flex-1 px-4 py-2.5 sm:py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors duration-200 order-2 sm:order-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deletingId === deleteModal.formId}
+                className="flex-1 px-4 py-2.5 sm:py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
+              >
+                {deletingId === deleteModal.formId ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Deleting...
+                  </div>
+                ) : (
+                  'Delete Form'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast notification */}
       {copied && (
         <div className="fixed bottom-4 left-4 right-4 sm:bottom-6 sm:right-6 sm:left-auto bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-in slide-in-from-bottom-2 duration-300 z-50">
@@ -366,4 +429,4 @@ export default function DashboardPage() {
       )}
     </div>
   );
-} 
+}
