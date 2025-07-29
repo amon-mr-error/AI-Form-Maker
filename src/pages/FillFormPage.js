@@ -53,50 +53,62 @@ export default function FillFormPage() {
     return null;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setMessage("");
-    const newErrors = {};
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
+  setMessage("");
 
+  const newErrors = {};
+  for (const el of form.elements) {
+    const val = values[el.id] || "";
+    const validationError = validateField(el, val);
+    if (validationError) {
+      newErrors[el.id] = validationError;
+    }
+  }
+  if (Object.keys(newErrors).length > 0) {
+    setFieldErrors(newErrors);
+    return;
+  }
+
+  setFieldErrors({});
+
+  try {
+    const formData = new FormData();
+    formData.append("formId", form._id);
+
+    // ✅ Convert values to array format for MongoDB schema
+    const responsesArray = Object.entries(values).map(([id, value]) => ({
+      elementId: id,
+      value: value
+    }));
+    formData.append("responses", JSON.stringify(responsesArray));
+
+    // ✅ Send metadata
+    formData.append("metadata", JSON.stringify({
+      device: navigator.userAgent,
+      browser: navigator.userAgent
+    }));
+
+    // ✅ Append files separately
     for (const el of form.elements) {
-      const val = values[el.id] || "";
-      const validationError = validateField(el, val);
-      if (validationError) {
-        newErrors[el.id] = validationError;
+      const val = values[el.id];
+      if (el.type === "file" && val) {
+        formData.append(`files[${el.id}]`, val);
       }
     }
 
-    if (Object.keys(newErrors).length > 0) {
-      setFieldErrors(newErrors);
-      return;
-    }
+    await axios.post(`${URL}/api/responses`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
 
-    setFieldErrors({});
+    setMessage(form.settings?.successMessage || "Form submitted successfully!");
+    setValues({});
+  } catch (err) {
+    setError(err.response?.data?.message || "Submission failed");
+  }
+};
 
-    try {
-      const formData = new FormData();
-      formData.append("formId", form._id);
-
-      for (const el of form.elements) {
-        const val = values[el.id];
-        if (el.type === "file" && val) {
-          formData.append(`files[${el.id}]`, val);
-        } else {
-          formData.append(`fields[${el.id}]`, val ?? "");
-        }
-      }
-
-      await axios.post(`${URL}/api/responses`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      setMessage(form.settings?.successMessage || "Form submitted successfully!");
-      setValues({});
-    } catch (err) {
-      setError(err.response?.data?.message || "Submission failed");
-    }
-  };
 
   const renderInput = (el) => {
     const commonProps = {
