@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import RegisterPage from "./RegisterPage";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -61,6 +62,16 @@ export default function LoginPage() {
         >
           Login
         </button>
+        <p className="mt-4 text-center text-gray-600">
+          Don't have an account?{" "}
+          <span
+            onClick={() => navigate("/register")}
+            className="text-blue-600 cursor-pointer hover:underline"
+          >
+            Register here
+          </span>
+        </p>
+        
       </form>
     </div>
   );

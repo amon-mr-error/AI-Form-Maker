@@ -5,6 +5,7 @@ import GenerateFormPage from "./pages/GenerateFormPage";
 import FillFormPage from "./pages/FillFormPage";
 import FormResponsesPage from "./pages/FormResponsesPage";
 import DashboardPage from "./pages/DashboardPage";
+import RegisterPage from "./pages/RegisterPage";
 
 
 function PrivateRoute({ children }) {
@@ -17,6 +18,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route
           path="/dashboard"
           element={
